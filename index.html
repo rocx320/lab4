@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSD | Lab 4</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="container p-5 main-cont">
+    <div class="top-text">
+        <h2>WSD LAB 4 | DOM Parser</h2>
+    </div>
+    <div class="open-file">
+        <div class="row align-items-center">
+            <div class="col-lg-6 col-md-6 col-sm-12">
+                <div id="input-field" class="d-flex flex-column">
+                    <label for="fileName" class="font-weight-bold">Enter File Name</label>
+                    <input type="text" id="fileName" placeholder="file name" class="form-control">
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-6 col-sm-12">
+                <button type="button" class="form-control btn btn-outline-dark" onclick="fileOpen()">Open</button>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="file-status text-center">
+        <span>File Status: <span id="fStatOut" class="text-primary">Waiting for input</span></span>
+    </div>
+    <hr>
+    <div class="action-buttons">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 col-sm-12 p-2">
+                <button class="btn btn-outline-dark form-control action_buttons" onclick="delBlock()" disabled="disabled">Delete Block</button>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 p-2">
+                <button class="btn btn-outline-dark form-control action_buttons" disabled="disabled" onclick="delNode()">Delete Element</button>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 p-2">
+                <button class="btn btn-outline-dark form-control action_buttons" disabled="disabled" onclick="changeNodeVal()">Change Node Value</button>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 p-2">
+                <button class="btn btn-outline-dark form-control action_buttons" disabled="disabled" onclick="addNewElement()">Add New element</button>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="final-result text-center">
+        <span>Response: <span id="final-res">Press a button to get a response</span></span>
+    </div>
+</div>
+
+<div class="container d-flex justify-content-center align-items-center flex-column d-none" id="xmlRes">
+    <h1 class="d-none mt-5 text-light" id="xmlTableH1">XML File</h1>
+    <div id="xmlTable" class="d-none">
+        <table id="dataTable">
+
+        </table>
+    </div>
+</div>
+<!--Scripts-->
+<script src="assets/js/jquery-3.6.0.js"></script>
+<script src="assets/js/bootstrap.js"></script>
+<script>
+
+    let rootElement;
+    let fileName = document.getElementById('fileName');
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                document.getElementById('fStatOut').innerText = "File Opened!"
+                document.getElementById('fStatOut').classList.remove("text-primary")
+                document.getElementById('fStatOut').classList.remove("text-danger")
+                document.getElementById('fStatOut').classList.add("text-success")
+                document.querySelectorAll('.action_buttons').forEach(e => {
+                        e.removeAttribute("disabled");
+                    }
+                )
+                rootElement = this.responseXML.documentElement;
+                displayXML(rootElement);
+            }
+            if (this.status == 404) {
+                document.getElementById('fStatOut').innerText = "File Not Found! Try Again!"
+                document.getElementById('fStatOut').classList.remove("text-primary")
+                document.getElementById('fStatOut').classList.remove("text-success")
+                document.getElementById('fStatOut').classList.add("text-danger")
+                document.querySelectorAll('.action_buttons').forEach(e => {
+                        e.setAttribute("disabled", "disabled");
+                    }
+                )
+            }
+        }
+    };
+
+    function displayXML() {
+        let i;
+        let xmlDoc = rootElement;
+        let table = `<tr><th>Name</th><th>Category</th><th>Rating</th></tr>`;
+        let element = xmlDoc.getElementsByTagName('freelancers');
+
+        for (i = 0; i < element.length; i++) {
+            table += `<tr><td>${element[i].getElementsByTagName('name')[0].childNodes[0].nodeValue}</td><td>${element[i].getElementsByTagName('category')[0].childNodes[0].nodeValue}</td><td>${element[i].getElementsByTagName('rating')[0].childNodes[0].nodeValue}</td></tr>`
+        }
+        document.getElementById('xmlTableH1').classList.remove("d-none")
+        document.getElementById('xmlTable').classList.remove("d-none")
+        document.getElementById('dataTable').innerHTML = table;
+
+    }
+
+    function fileOpen() {
+        console.log("Check: ", fileName.value)
+        xhttp.open("GET", `${fileName.value}.xml`, true);
+        xhttp.send();
+    }
+
+    function delBlock() {
+        let removedBlock = rootElement.removeChild(rootElement.childNodes[1]); //To understand why we have used 1 instead of zero, go to console and type rootElement.childNodes
+        document.getElementById('final-res').innerText = "Block Deleted: " + removedBlock.innerHTML;
+        displayXML();
+    }
+
+    function delNode() {
+        let currNode = rootElement.childNodes[1];
+        let removedNode = currNode.removeChild(currNode.childNodes[1]);
+        document.getElementById('final-res').innerText = "Node Deleted: " + removedNode.outerHTML;
+        displayXML();
+    }
+
+    function changeNodeVal() {
+        let nodeName = prompt("Enter Node Name(name, category, rating, freelancers)", "Node Name");
+        let currNode = rootElement.getElementsByTagName(nodeName)[0].childNodes[0];
+        let ogVal = currNode.nodeValue;
+        let nodeVal = prompt("Enter New Value", "new value");
+        currNode.nodeValue = nodeVal;
+        document.getElementById('final-res').innerText = "Value Changed from: " + ogVal + " to " + currNode.nodeValue;
+        displayXML();
+    }
+
+    function addNewElement() {
+        let childName = prompt("Name of the element you want to add", "element name");
+        let newElement = document.createElement(childName);
+        let nodeVal = prompt("Enter New Value", "new value");
+        let text = document.createTextNode(nodeVal);
+        newElement.appendChild(text)
+        let nodeName = prompt("Enter Node Name(name, category, rating, freelancers)", "Node Name");
+        let affNode = rootElement.getElementsByTagName(nodeName)[0];
+        affNode.appendChild(newElement);
+        document.getElementById('final-res').innerText = "New Element: " + affNode.innerHTML;
+        displayXML();
+    }
+</script>
+</body>
+</html>
